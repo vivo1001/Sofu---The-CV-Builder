@@ -1,0 +1,190 @@
+\documentclass[letterpaper,11pt]{article}
+
+% ======================================================
+% ONE-PAGE RESUME TEMPLATE (English)
+% ------------------------------------------------------
+% How to use this template:
+%   1. Replace every placeholder in [square brackets].
+%   2. Use date format "Mon. YYYY -- Mon. YYYY"
+%      (ongoing roles: "Mon. YYYY -- present").
+%   3. Start each bullet with an action verb and include
+%      a measurable result where possible.
+%   4. Delete entries or sections you don't need; the
+%      layout adjusts automatically.
+%   5. Aim for one page: if it overflows, cut bullets
+%      before shrinking the spacing.
+% ======================================================
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{hyphenat}
+\usepackage{fontawesome}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\footskip}{12pt}
+
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.6in}
+\addtolength{\textheight}{1.2in}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-2pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-2pt}]
+
+\pdfgentounicode=1
+
+% ======================================================
+% ENTRY COMMANDS
+% ======================================================
+% \resumeItem{bullet text}
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1}
+  }
+}
+
+% \resumeSubheading{Institution}{Location}{Degree/Role}{Dates}
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      {\small#3} & {\small #4} \\
+    \end{tabular*}
+}
+
+% \resumeProjectHeading{Title/Position + Organization}{Dates}
+\newcommand{\resumeProjectHeading}[2]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}, itemsep=6pt, parsep=0pt, topsep=4pt]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[itemsep=2pt, parsep=0pt, topsep=4pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-2pt}}
+
+%-------------------------------------------
+\begin{document}
+
+%---------- HEADER ----------
+\begin{center}
+    \textbf{\Huge \scshape [First Name Last Name]} \\ \vspace{4pt}
+    \small
+    \faMobile \hspace{.5pt} +49 XXX XXXXXXXX
+    \hspace{2pt} $|$ \hspace{2pt}
+    [City, Region, Country]
+    \\ \vspace{2pt}
+    \faAt \hspace{.5pt} first.last@example.com
+    \hspace{2pt} $|$ \hspace{2pt}
+    \faLinkedinSquare \hspace{.5pt} linkedin.com/in/username
+\end{center}
+
+\vspace{2pt}
+
+%----------- EDUCATION -----------
+\section{Education}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {[University Name]}{[City, Country]}
+      {[Degree and Program, e.g. M.Sc. ...]}{\textit{Mon. YYYY -- present}}
+
+    \resumeSubheading
+      {[University Name]}{[City, Country]}
+      {[Degree and Program, e.g. B.Sc. ...]}{\textit{Mon. YYYY -- Mon. YYYY}}
+
+  \resumeSubHeadingListEnd
+
+%----------- WORK EXPERIENCE -----------
+\section{Work Experience}
+
+\resumeSubHeadingListStart
+
+  \resumeProjectHeading
+    {\textbf{\large [Position],} \textit{[Company, City]}}
+    {\textit{\small Mon. YYYY -- present}}
+  \\
+  \resumeItemListStart
+    \resumeItem{[Action verb + what you did, with tools/methods and a measurable result.]}
+    \resumeItem{[Second responsibility or achievement, quantified where possible.]}
+    \resumeItem{[Third bullet, e.g. collaboration, presentation, or process improvement.]}
+  \resumeItemListEnd
+
+  \resumeProjectHeading
+    {\textbf{\large [Position],} \textit{[Company or Institute, City]}}
+    {\textit{\small Mon. YYYY -- Mon. YYYY}}
+  \\
+  \resumeItemListStart
+    \resumeItem{[Action verb + task + outcome with a number, e.g. efficiency, accuracy, or scale.]}
+    \resumeItem{[Second bullet describing a distinct responsibility.]}
+  \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%----------- ACADEMIC PROJECTS -----------
+\section{Academic Projects}
+    \resumeSubHeadingListStart
+
+      \resumeProjectHeading
+        {\textbf{\large [Project Title],} \textit{[Institution or Context]}}
+        {\textit{\small Mon. YYYY -- Mon. YYYY}}
+      \\
+      \resumeItemListStart
+        \resumeItem{[What you built or investigated, and with which methods/tools.]}
+        \resumeItem{[Key result, quantified, e.g. accuracy, efficiency, agreement with reference.]}
+      \resumeItemListEnd
+
+      \resumeProjectHeading
+        {\textbf{\large [Project Title]}}{\textit{\small Mon. YYYY -- Mon. YYYY}}
+        \\
+          \resumeItemListStart
+            \resumeItem{[One-line summary: task, method, and outcome.]}
+          \resumeItemListEnd
+
+      \resumeProjectHeading
+        {\textbf{\large [Thesis Title, e.g. Bachelor Thesis: ...]}}{\textit{\small Mon. YYYY -- Mon. YYYY}}
+        \\
+          \resumeItemListStart
+            \resumeItem{[Approach or model developed; key validation result with a number.]}
+          \resumeItemListEnd
+
+    \resumeSubHeadingListEnd
+
+%----------- SKILLS -----------
+\section{Skills}
+  \resumeSubHeadingListStart
+    \small{\item{
+    \begin{itemize}[itemsep=2pt, parsep=0pt, topsep=3pt]
+        \item \textbf{Programming:}{ [Language 1], [Language 2], [Language 3]}
+        \item \textbf{Simulation \& Modeling:}{ [Method/Tool 1], [Method/Tool 2]}
+        \item \textbf{Lab Equipment:}{ [Instrument 1], [Instrument 2], [Instrument 3]}
+        \item \textbf{Software \& Tools:}{ [Tool 1], [Tool 2], [Tool 3]}
+        \item \textbf{Languages:}{ [Language (Level)], [Language (Level)], [Language (Level)]}
+    \end{itemize}
+    }}
+  \resumeSubHeadingListEnd
+
+\end{document}

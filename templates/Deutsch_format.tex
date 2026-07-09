@@ -1,0 +1,425 @@
+\documentclass[11pt,a4paper]{article}
+
+% ======================================================
+% LEBENSLAUF-VORLAGE (Sidebar-Format, Deutsch)
+% ------------------------------------------------------
+% So verwenden Sie diese Vorlage:
+%   1. Alle Platzhalter in [eckigen Klammern] ersetzen.
+%   2. Datumsangaben im Format MM/JJJJ eintragen
+%      (laufende Taetigkeiten: MM/JJJJ--heute).
+%   3. photo.jpg und signature.png in den Projektordner
+%      legen. Fehlen die Dateien, kompiliert die Vorlage
+%      trotzdem und zeigt einen Platzhalterrahmen.
+%   4. Nicht benoetigte Eintraege/Abschnitte loeschen
+%      oder mit % auskommentieren.
+% ======================================================
+
+% ======================================================
+% PACKAGES
+% ======================================================
+\usepackage[a4paper,
+left=7.2cm,
+right=1.5cm,
+top=1.8cm,
+bottom=2cm]{geometry}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,ngerman]{babel}
+
+\usepackage{changepage}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fontawesome5}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{ifthen}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+% ======================================================
+% COLORS
+% ======================================================
+\definecolor{sidebarblue}{RGB}{220,232,245}
+
+% ======================================================
+% PHOTO AND SIGNATURE FILES
+% (Dateinamen bei Bedarf hier anpassen)
+% ======================================================
+\newcommand{\cvphoto}{photo.jpg}
+\newcommand{\cvsignature}{signature.png}
+
+% ======================================================
+% SIDEBAR ONLY ON FIRST PAGE
+% ======================================================
+\AddToShipoutPictureBG*{
+\begin{tikzpicture}[remember picture,overlay]
+
+\fill[sidebarblue]
+(current page.north west)
+rectangle ([xshift=6.5cm]current page.south west);
+
+\end{tikzpicture}
+}
+
+% ======================================================
+% SECTION FORMAT
+% ======================================================
+\titleformat{\section}
+{\Large\bfseries}
+{}
+{0pt}
+{}
+[\titlerule]
+
+\titlespacing*{\section}
+{0pt}{12pt}{8pt}
+
+% ======================================================
+% ENTRY COMMANDS
+% ======================================================
+% \cventry{Zeitraum}{Titel/Position}{Institution/Firma}{Beschreibung}
+\newcommand{\cventry}[4]
+{
+\vspace{0.8em}
+
+\begin{tabularx}{\textwidth}{p{3.5cm}X}
+\textbf{#1}
+&
+\textbf{#2}
+\\[0.2em]
+&
+\textit{#3}
+\\[0.5em]
+&
+\begin{minipage}[t]{0.95\linewidth}
+#4
+\end{minipage}
+\end{tabularx}
+
+\vspace{0.1em}
+}
+
+% \simpleentry{Jahr}{Beschreibung} — z.B. fuer Auszeichnungen
+\newcommand{\simpleentry}[2]
+{
+\begin{tabularx}{\textwidth}{p{3cm}X}
+\textbf{#1} & #2
+\end{tabularx}
+
+\vspace{0.2em}
+}
+
+% \skillentry{Kategorie}{kommagetrennte Liste}
+\newcommand{\skillentry}[2]{%
+    \begin{tabularx}{\textwidth}{@{} p{5cm} X @{}}
+        \textbf{#1} & #2 
+    \end{tabularx}\par
+}
+
+% Beendet das Sidebar-Layout und schaltet auf normale
+% Seitenraender um (ab Seite 2 aufrufen).
+\newcommand{\switchtonormalpages}{
+\vfill
+\clearpage
+\newgeometry{
+left=2cm,
+right=1.5cm,
+top=1.8cm,
+bottom=2cm
+}
+}
+
+\setlist[itemize]{
+leftmargin=1.2em,
+topsep=2pt,
+itemsep=1pt,
+parsep=0pt,
+partopsep=0pt
+}
+
+% ======================================================
+% DOCUMENT
+% ======================================================
+\begin{document}
+
+% ======================================================
+% SIDEBAR CONTENT
+% ======================================================
+\begin{tikzpicture}[remember picture,overlay]
+
+\node[
+anchor=north west,
+inner sep=0pt
+]
+at ([xshift=0.6cm,yshift=-0.8cm]current page.north west)
+{
+
+\begin{minipage}[t]{5.2cm}
+
+\centering
+% ======================================================
+% PHOTO
+% ======================================================
+
+\centering
+\IfFileExists{\cvphoto}{%
+    \includegraphics[width=4cm,height=5cm]{\cvphoto}%
+}{%
+    \fbox{\parbox[c][5cm][c]{3.8cm}{\centering Foto\\einf\"ugen\\\texttt{(photo.jpg)}}}%
+}
+
+\vspace{0.6cm}
+
+% ======================================================
+% NAME
+% ======================================================
+
+{\fontsize{22}{24}\selectfont\bfseries [Vorname]}\\
+\vspace{0.2cm}
+{\fontsize{22}{24}\selectfont\bfseries [Nachname]}
+
+\vspace{0.3cm}
+
+{\fontsize{15}{18}\selectfont\bfseries Lebenslauf}
+
+\raggedright
+\vspace{0.5cm}
+% ======================================================
+% PERSONAL DATA
+% ======================================================
+
+{\large\bfseries Pers\"onliche Daten}
+
+\vspace{0.4cm}
+
+\textbf{Geburtsdatum}\\
+TT.MM.JJJJ
+
+\vspace{0.3cm}
+
+% Optionale Felder — bei Bedarf einkommentieren:
+
+% \textbf{Geburtsort}\\
+% [Ort, Land]
+
+% \vspace{0.3cm}
+
+% \textbf{Staatsangeh\"origkeit}\\
+% [Staatsangeh\"origkeit]
+
+% \vspace{0.3cm}
+
+% \textbf{Familienstand}\\
+% [ledig/verheiratet]
+
+\vspace{0.8cm}
+
+% ======================================================
+% CONTACT
+% ======================================================
+
+{\large\bfseries Kontakt}
+
+\vspace{0.4cm}
+
+\faPhone\ +49 XXX XXXXXXXX
+
+\vspace{0.25cm}
+
+\faEnvelope\ \href{mailto:vorname.nachname@example.com}{vorname.nachname@example.com}
+
+\vspace{0.25cm}
+
+\faMapMarker*\ [Stadt, Land]
+
+\vspace{0.25cm}
+
+\faLinkedin\ \href{https://linkedin.com/in/benutzername}{linkedin.com/in/benutzername}
+
+\vspace{0.25cm}
+
+% \faGithub\ \href{https://github.com/benutzername}{github.com/benutzername}
+
+\vspace{0.8cm}
+
+% ======================================================
+% LANGUAGES
+% ======================================================
+
+{\large\bfseries Sprachkenntnisse}
+
+\vspace{0.4cm}
+
+[Sprache 1] — [Niveau, z.B. Muttersprache]
+
+\vspace{0.2cm}
+
+[Sprache 2] — [Niveau, z.B. C1]
+
+\vspace{0.2cm}
+
+[Sprache 3] — [Niveau, z.B. B1]
+
+\end{minipage}
+
+};
+
+\end{tikzpicture}
+
+% ======================================================
+% MAIN CONTENT
+% ======================================================
+
+% \section{Kurzprofil}
+
+% [2--3 Saetze: Wer sind Sie, was koennen Sie, was suchen Sie?]
+
+% ======================================================
+% 1. Education
+% ======================================================
+
+\section{Ausbildung}
+
+\cventry
+{MM/JJJJ--heute}
+{[Abschluss und Studiengang, z.B. M.Sc. ...]}
+{[Hochschule, Ort]}
+{Note: [X{,}X] % oder ECTS-Schnitt; Zeile loeschen, falls nicht gewuenscht
+\\[0.2em]
+Schwerpunkte: [Schwerpunkt 1], [Schwerpunkt 2], [Schwerpunkt 3]}
+
+\cventry
+{MM/JJJJ--MM/JJJJ}
+{[Abschluss und Studiengang, z.B. B.Sc. ...]}
+{[Hochschule, Ort]}
+{
+Note: [X{,}X]
+
+\vspace{0.4em}
+\textbf{Abschlussarbeit} (MM/JJJJ--MM/JJJJ): \textit{[Titel der Arbeit]}
+\begin{itemize}
+\item {[Kernaufgabe oder wichtigstes Ergebnis, moeglichst mit Zahl]}
+\end{itemize}
+}
+
+% ======================================================
+
+\section{Berufserfahrung}
+
+\cventry
+{MM/JJJJ--heute}
+{[Position, z.B. Werkstudent/in]}
+{[Firma, Ort]}
+{
+\begin{itemize}
+\item {[Taetigkeit mit messbarem Ergebnis: Was? Womit? Resultat?]}
+\item {[Weitere Taetigkeit oder Verantwortung]}
+\end{itemize}
+}
+
+\cventry
+{MM/JJJJ--MM/JJJJ}
+{[Position]}
+{[Firma, Ort]}
+{
+\begin{itemize}
+\item {[Taetigkeit mit messbarem Ergebnis]}
+\end{itemize}
+}
+
+% ======================================================
+\switchtonormalpages
+
+\section{Projekte}
+
+\cventry
+{MM/JJJJ--MM/JJJJ}
+{[Projekttitel]}
+{[Institution oder Kontext]}
+{
+\begin{itemize}
+\item {[Was wurde gemacht?]}
+\item {[Welche Methoden/Werkzeuge?]}
+\item {[Ergebnis, moeglichst mit Zahl]}
+\end{itemize}
+}
+
+\cventry
+{MM/JJJJ--MM/JJJJ}
+{[Projekttitel]}
+{[Institution oder Kontext]}
+{
+\begin{itemize}
+\item {[Kurzbeschreibung mit Ergebnis]}
+\end{itemize}
+}
+
+% ======================================================
+
+% \section{Auszeichnungen \& Erfolge}
+
+% \simpleentry
+% {JJJJ}
+% {[Auszeichnung, Wettbewerb oder Stipendium mit Einordnung]}
+
+% ======================================================
+
+\section{Kenntnisse \& F\"ahigkeiten}
+
+\skillentry
+{Programmiersprachen}
+{[Sprache 1], [Sprache 2], [Sprache 3]}
+
+\skillentry
+{Simulation}
+{[Methode/Tool 1], [Methode/Tool 2]}
+
+\skillentry
+{Software \& Werkzeuge}
+{[Tool 1], [Tool 2], [Tool 3]}
+
+\skillentry
+{Labor- und Forschungskenntnisse}
+{[Kenntnis 1], [Kenntnis 2], [Kenntnis 3]}
+
+\skillentry
+{Laborger\"ate}
+{[Ger\"at 1], [Ger\"at 2], [Ger\"at 3]}
+
+% ======================================================
+
+\section{Hobbys \& Interessen}
+
+[Hobby 1], [Hobby 2], [Hobby 3]
+
+\vfill
+
+% ======================================================
+% PLACE, DATE AND SIGNATURE
+% ======================================================
+\vspace{0.4cm}
+[Stadt], \today
+
+\IfFileExists{\cvsignature}{%
+    \includegraphics[height=2cm]{\cvsignature}%
+}{%
+    \vspace{2cm}%
+}
+
+\vspace{-0.5cm}
+
+\rule{5cm}{0.4pt}
+
+[Vorname Nachname]
+
+\end{document}
