@@ -1,0 +1,3 @@
+# Proxy LaTeX compiles to texlive.net (mirrors the dev proxy in vite.config.js)
+/latexcgi     https://texlive.net/cgi-bin/latexcgi   200
+/latexcgi/*   https://texlive.net/latexcgi/:splat    200
