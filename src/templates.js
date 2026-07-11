@@ -1,8 +1,9 @@
-import { escapeLatex as esc, fillTemplate } from './latex.js';
+import { escapeLatex as esc, escapeUrl, fillTemplate } from './latex.js';
 
 // ---------------- English (MIT format) ----------------
 
 const EN_TEMPLATE = String.raw`\documentclass[letterpaper,11pt]{article}
+\usepackage[T1]{fontenc}
 \usepackage{latexsym}
 \usepackage[empty]{fullpage}
 \usepackage{titlesec}
@@ -468,10 +469,10 @@ function buildDeutsch(data) {
     BIRTHDATE: esc(data.birthdate),
     PHONE: esc(data.phone),
     EMAIL: esc(data.email),
-    EMAILRAW: data.email, // inside \href URL argument, not escaped
+    EMAILRAW: escapeUrl(data.email), // inside \href URL argument: percent-encoded
     LOCATION: esc(data.location),
     LINKEDIN: esc(data.linkedin),
-    LINKEDINRAW: data.linkedin.replace(/^https?:\/\//, ''),
+    LINKEDINRAW: escapeUrl(data.linkedin.replace(/^https?:\/\//, '')),
     LANGUAGES: languages,
     EDUCATION: deSection('Ausbildung', education),
     EXPERIENCE: deSection('Berufserfahrung', experience),

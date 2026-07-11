@@ -11,6 +11,9 @@ function load() {
     const data = { ...EMPTY_DATA, ...saved };
     // older saves lack the deutsch-only education fields
     data.education = data.education.map((e) => ({ grade: '', bullets: [''], ...e }));
+    // guard future shape changes the same way: never crash on a missing bullets array
+    for (const k of ['experience', 'projects'])
+      data[k] = data[k].map((e) => ({ bullets: [''], ...e }));
     return data;
   } catch {
     return EMPTY_DATA;
@@ -21,7 +24,8 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [templateId, setTemplateId] = useState(null);
   const [data, setData] = useState(load);
-  const [status, setStatus] = useState(null); // null | 'compiling' | 'done' | {error}
+  const [status, setStatus] = useState(null); // null | 'compiling' | 'translating' | {error}
+  const busy = status === 'compiling' || status === 'translating';
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -96,14 +100,26 @@ export default function App() {
       setData((d) => ({ ...d, [field]: c.toDataURL(mime, 0.85) }));
       URL.revokeObjectURL(img.src);
     };
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      setStatus({ error: 'Could not read that image — please use a JPG or PNG file.' });
+    };
     img.src = URL.createObjectURL(file);
   };
+
+  // single compile path shared by download and preview, so they can't diverge
+  async function compilePdf() {
+    // an empty name breaks the templates (bare \\ on an empty LaTeX line) and the filename
+    if (!data.name.trim())
+      throw new Error('Please fill in your full name (Personal Info) before generating the PDF.');
+    const { tex, files, engine } = buildTex(data, templateId);
+    return compileToPdf(tex, files, engine);
+  }
 
   async function download() {
     setStatus('compiling');
     try {
-      const { tex, files, engine } = buildTex(data, templateId);
-      const pdf = await compileToPdf(tex, files, engine);
+      const pdf = await compilePdf();
       downloadBlob(pdf, `CV_${data.name.replace(/\s+/g, '_') || 'resume'}.pdf`);
       setStatus(null);
       setFinished(true);
@@ -114,35 +130,66 @@ export default function App() {
 
   // ponytail: free MyMemory API, no key — ~5000 chars/day per IP; swap in DeepL if users hit the cap
   async function toGerman(text) {
-    if (!text?.trim()) return text;
     const res = await fetch(
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|de`
     );
     const json = await res.json();
-    if (!res.ok || !json.responseData?.translatedText) throw new Error('Translation service unavailable');
-    return json.responseData.translatedText;
+    const out = json.responseData?.translatedText;
+    // MyMemory reports quota/length errors as HTTP 200 with the message in translatedText
+    if (!res.ok || Number(json.responseStatus) !== 200 || !out || /MYMEMORY WARNING/i.test(out))
+      throw new Error('The free translation service is unavailable or over its daily limit — please try again later.');
+    return out;
   }
+
+  // which fields hold prose worth translating (names, dates, emails are left alone);
+  // drives both the collection and the merge below so they can't drift apart
+  const TRANSLATABLE = {
+    education: ['degree'],
+    experience: ['position'],
+    projects: ['title', 'context'],
+    skills: ['category', 'items'],
+  };
+
+  const [preTranslation, setPreTranslation] = useState(null); // data snapshot for undo
 
   async function translateAll() {
     setStatus('translating');
     try {
-      const all = (xs) => Promise.all(xs);
-      const d = { ...data };
-      d.education = await all(data.education.map(async (e) => ({
-        ...e, degree: await toGerman(e.degree), bullets: await all(e.bullets.map(toGerman)),
-      })));
-      d.experience = await all(data.experience.map(async (e) => ({
-        ...e, position: await toGerman(e.position), bullets: await all(e.bullets.map(toGerman)),
-      })));
-      d.projects = await all(data.projects.map(async (e) => ({
-        ...e, title: await toGerman(e.title), context: await toGerman(e.context), bullets: await all(e.bullets.map(toGerman)),
-      })));
-      d.skills = await all(data.skills.map(async (s) => ({
-        ...s, category: await toGerman(s.category), items: await toGerman(s.items),
-      })));
-      d.languages = await all(data.languages.map(toGerman));
-      d.hobbies = await toGerman(data.hobbies);
-      setData(d);
+      const texts = new Set();
+      for (const [list, fields] of Object.entries(TRANSLATABLE))
+        for (const e of data[list]) {
+          fields.forEach((f) => texts.add(e[f]));
+          e.bullets?.forEach((b) => texts.add(b));
+        }
+      data.languages.forEach((l) => texts.add(l));
+      texts.add(data.hobbies);
+      const queue = [...texts].filter((t) => t?.trim());
+
+      // ponytail: 4 workers draining one queue — parallel enough, gentle on MyMemory's rate limit
+      const memo = new Map();
+      let next = 0;
+      await Promise.all(
+        Array.from({ length: Math.min(4, queue.length) }, async () => {
+          while (next < queue.length) {
+            const t = queue[next++];
+            memo.set(t, await toGerman(t));
+          }
+        })
+      );
+
+      setPreTranslation(data);
+      const tr = (s) => memo.get(s) ?? s;
+      // functional update + text lookup: anything edited mid-translation keeps its new value
+      setData((cur) => {
+        const d = { ...cur, languages: cur.languages.map(tr), hobbies: tr(cur.hobbies) };
+        for (const [list, fields] of Object.entries(TRANSLATABLE))
+          d[list] = cur[list].map((e) => ({
+            ...e,
+            ...Object.fromEntries(fields.map((f) => [f, tr(e[f])])),
+            ...(e.bullets ? { bullets: e.bullets.map(tr) } : {}),
+          }));
+        return d;
+      });
       setStatus(null);
     } catch (err) {
       setStatus({ error: 'Translation failed: ' + err.message });
@@ -160,7 +207,7 @@ export default function App() {
       const res = await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ 'form-name': 'feedback', message: feedback }),
+        body: new URLSearchParams({ 'form-name': 'feedback', message: feedback, 'bot-field': '' }),
       });
       if (!res.ok) throw new Error();
       setFeedbackState('sent');
@@ -172,12 +219,16 @@ export default function App() {
   // ponytail: manual refresh, not live — each compile is a multi-second remote
   // texlive.net call; debounced auto-compile if a local LaTeX/WASM engine lands
   // pdf.js renders pages to images because Android has no inline PDF viewer for iframes
-  const [previewPages, setPreviewPages] = useState(null);
+  const [previewPages, setPreviewPages] = useState(null); // array of object URLs
+  const dropPages = (pages, replacement = null) => {
+    pages?.forEach((u) => URL.revokeObjectURL(u));
+    return replacement;
+  };
+  const closePreview = () => setPreviewPages((old) => dropPages(old));
   async function refreshPreview() {
     setStatus('compiling');
     try {
-      const { tex, files, engine } = buildTex(data, templateId);
-      const pdf = await compileToPdf(tex, files, engine);
+      const pdf = await compilePdf();
       const [pdfjs, worker] = await Promise.all([
         import('pdfjs-dist'),
         import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
@@ -192,9 +243,10 @@ export default function App() {
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), canvas, viewport }).promise;
-        pages.push(canvas.toDataURL());
+        // object URLs keep multi-MB page images off the JS string heap (fine in <img>, unlike PDFs in iframes)
+        pages.push(await new Promise((resolve) => canvas.toBlob((b) => resolve(URL.createObjectURL(b)))));
       }
-      setPreviewPages(pages);
+      setPreviewPages((old) => dropPages(old, pages));
       setStatus(null);
     } catch (err) {
       setStatus({ error: err.message });
@@ -304,7 +356,7 @@ export default function App() {
             )}
           </form>
         )}
-        <button onClick={() => { setFinished(false); setFeedbackState(null); setFeedback(''); setTemplateId(null); setStarted(false); }}>
+        <button onClick={() => { setFinished(false); setFeedbackState(null); setFeedback(''); setTemplateId(null); setStarted(false); closePreview(); setPreTranslation(null); }}>
           ← Back to start
         </button>
       </main>
@@ -320,14 +372,19 @@ export default function App() {
         <h1>Sofu — {TEMPLATES[templateId].name}</h1>
         <div>
           {templateId === 'deutsch' && (
-            <button disabled={status === 'translating'} onClick={translateAll}>
+            <button disabled={busy} onClick={translateAll}>
               Translate to German
             </button>
           )}
-          <button disabled={status === 'compiling'} onClick={refreshPreview}>
+          {templateId === 'deutsch' && preTranslation && (
+            <button disabled={busy} onClick={() => { setData(preTranslation); setPreTranslation(null); }}>
+              Undo translation
+            </button>
+          )}
+          <button disabled={busy} onClick={refreshPreview}>
             {previewPages ? '↻ Refresh preview' : 'Preview'}
           </button>
-          <button onClick={() => setTemplateId(null)}>Change format</button>
+          <button onClick={() => { closePreview(); setTemplateId(null); }}>Change format</button>
         </div>
       </header>
 
@@ -395,7 +452,7 @@ export default function App() {
                         setEntry('education', i, 'bullets', e.bullets.map((x, xj) => (xj === bi ? ev.target.value : x)))
                       }
                     />
-                    <button onClick={() => setEntry('education', i, 'bullets', e.bullets.filter((_, xj) => xj !== bi))}>×</button>
+                    <button aria-label="Remove detail" onClick={() => setEntry('education', i, 'bullets', e.bullets.filter((_, xj) => xj !== bi))}>×</button>
                   </div>
                 ))}
                 <button onClick={() => setEntry('education', i, 'bullets', [...e.bullets, ''])}>+ Detail</button>
@@ -435,7 +492,7 @@ export default function App() {
                       setEntry(key, i, 'bullets', e.bullets.map((x, xj) => (xj === bi ? ev.target.value : x)))
                     }
                   />
-                  <button onClick={() => setEntry(key, i, 'bullets', e.bullets.filter((_, xj) => xj !== bi))}>×</button>
+                  <button aria-label="Remove bullet" onClick={() => setEntry(key, i, 'bullets', e.bullets.filter((_, xj) => xj !== bi))}>×</button>
                 </div>
               ))}
               <button onClick={() => setEntry(key, i, 'bullets', [...e.bullets, ''])}>+ Bullet</button>
@@ -477,7 +534,7 @@ export default function App() {
                     setData({ ...data, languages: data.languages.map((x, j) => (j === i ? ev.target.value : x)) })
                   }
                 />
-                <button onClick={() => setData({ ...data, languages: data.languages.filter((_, j) => j !== i) })}>×</button>
+                <button aria-label="Remove language" onClick={() => setData({ ...data, languages: data.languages.filter((_, j) => j !== i) })}>×</button>
               </div>
             ))}
             <button onClick={() => setData({ ...data, languages: [...data.languages, ''] })}>+ Language</button>
@@ -491,10 +548,23 @@ export default function App() {
       )}
 
       <footer>
-        <button className="primary" disabled={status === 'compiling'} onClick={download}>
+        <button className="primary" disabled={busy} onClick={download}>
           {status === 'compiling' ? 'Compiling…' : 'Download PDF'}
         </button>
+        <button onClick={() => {
+          if (window.confirm('Delete all your CV data from this browser?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            setData(EMPTY_DATA);
+            setPreTranslation(null);
+          }
+        }}>
+          Clear my data
+        </button>
         {status?.error && <pre className="error">{status.error}</pre>}
+        <p className="privacy-note">
+          PDFs are typeset by texlive.net — your entries are sent there for compiling.
+          Otherwise your data stays only in this browser.
+        </p>
       </footer>
 
       {(status === 'compiling' || status === 'translating') && (
@@ -511,7 +581,7 @@ export default function App() {
       <aside className="preview-pane">
         <div className="preview-bar">
           <span>Preview</span>
-          <button onClick={() => setPreviewPages(null)}>× Close</button>
+          <button onClick={closePreview}>× Close</button>
         </div>
         <div className="preview-pages">
           {previewPages.map((src, i) => (

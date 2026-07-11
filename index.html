@@ -5,21 +5,56 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sofu — the CV builder</title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1BL28DD1NX"></script>
+    <meta name="description" content="Sofu — free CV builder. Pick an English or German template, fill in your details, and download a polished LaTeX-typeset PDF." />
+    <meta property="og:title" content="Sofu — the CV builder" />
+    <meta property="og:description" content="Build a polished, LaTeX-typeset CV in minutes. English and German templates." />
+    <meta property="og:type" content="website" />
+    <!-- Google Analytics, loaded only after opt-in consent (GDPR/TTDSG) -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-1BL28DD1NX');
+      (function () {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { dataLayer.push(arguments); };
+        function loadGA() {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-1BL28DD1NX';
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', 'G-1BL28DD1NX');
+        }
+        var consent = localStorage.getItem('ga-consent');
+        if (consent === 'yes') { loadGA(); return; }
+        if (consent === 'no') return;
+        window.addEventListener('DOMContentLoaded', function () {
+          var bar = document.createElement('div');
+          bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9;background:#1e1b3a;color:#fff;padding:12px 16px;font-size:14px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;';
+          var msg = document.createElement('span');
+          msg.textContent = 'May we use anonymous analytics cookies (Google Analytics) to improve Sofu?';
+          bar.appendChild(msg);
+          ['yes', 'no'].forEach(function (val) {
+            var b = document.createElement('button');
+            b.textContent = val === 'yes' ? 'Accept' : 'Decline';
+            b.style.cssText = 'padding:6px 16px;border-radius:6px;border:1px solid #fff;color:#fff;cursor:pointer;background:' + (val === 'yes' ? '#4f46e5' : 'transparent') + ';';
+            b.onclick = function () {
+              localStorage.setItem('ga-consent', val);
+              bar.remove();
+              if (val === 'yes') loadGA();
+            };
+            bar.appendChild(b);
+          });
+          document.body.appendChild(bar);
+        });
+      })();
     </script>
   </head>
   <body>
     <div id="root"></div>
     <!-- static twin of the React feedback form so Netlify's build bot registers it -->
-    <form name="feedback" netlify hidden><textarea name="message"></textarea></form>
-    <footer style="position: fixed; bottom: 8px; left: 12px; font-size: 12px; color: #888; z-index: 1000; pointer-events: none;">
+    <form name="feedback" netlify netlify-honeypot="bot-field" hidden>
+      <textarea name="message"></textarea><input name="bot-field" />
+    </form>
+    <!-- z-index below the app's preview pane (5) and overlay (10) -->
+    <footer style="position: fixed; bottom: 8px; left: 12px; font-size: 12px; color: #888; z-index: 4; pointer-events: none;">
       &copy; 2026 Vivek Harikumar
     </footer>
     <script type="module" src="/src/main.jsx"></script>

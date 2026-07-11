@@ -260,6 +260,7 @@ footer { margin-top: 28px; text-align: center; }
 }
 .primary:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45); }
 .primary:disabled { filter: grayscale(0.6); cursor: wait; transform: none; }
+.privacy-note { color: var(--muted); font-size: 0.8rem; margin-top: 14px; }
 
 .error {
   margin-top: 14px;
@@ -301,25 +302,6 @@ footer { margin-top: 28px; text-align: center; }
 
 .overlay-text { margin: 18px 0 2px; font-weight: 600; }
 .overlay-hint { margin: 0; color: var(--muted); font-size: 0.9rem; }
-
-/* ---------- toast ---------- */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  background: #16a34a;
-  color: #fff;
-  padding: 11px 22px;
-  border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.4);
-  animation: pop 0.3s ease both;
-  z-index: 11;
-}
-@keyframes pop {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to   { opacity: 1; transform: translateX(-50%); }
-}
 
 /* ---------- credit (welcome screen only, bottom right) ---------- */
 .credit {

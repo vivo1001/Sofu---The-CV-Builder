@@ -11,6 +11,8 @@ const ESCAPES = [
   [/}/g, '\\}'],
   [/~/g, '\\textasciitilde{}'],
   [/\^/g, '\\textasciicircum{}'],
+  // ngerman babel makes " an active shorthand ("a → ä); neutralize it everywhere
+  [/"/g, '\\textquotedbl{}'],
 ];
 
 export function escapeLatex(str) {
@@ -19,6 +21,10 @@ export function escapeLatex(str) {
   for (const [re, rep] of ESCAPES.slice(1)) s = s.replace(re, rep);
   return s.replace(/\x00/g, '\\textbackslash{}');
 }
+
+// For \href URL arguments: percent-encode instead of LaTeX-escaping — a raw %
+// comments out the line, {} break the group, and {{ trips the placeholder check.
+export const escapeUrl = (str) => String(str ?? '').replace(/[\\%#{} ]/g, encodeURIComponent);
 
 // Replace every {{KEY}} in template with values[KEY] (already-built LaTeX strings).
 export function fillTemplate(template, values) {
