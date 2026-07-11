@@ -171,16 +171,30 @@ export default function App() {
 
   // ponytail: manual refresh, not live — each compile is a multi-second remote
   // texlive.net call; debounced auto-compile if a local LaTeX/WASM engine lands
-  const [previewUrl, setPreviewUrl] = useState(null);
+  // pdf.js renders pages to images because Android has no inline PDF viewer for iframes
+  const [previewPages, setPreviewPages] = useState(null);
   async function refreshPreview() {
     setStatus('compiling');
     try {
       const { tex, files, engine } = buildTex(data, templateId);
       const pdf = await compileToPdf(tex, files, engine);
-      setPreviewUrl((old) => {
-        if (old) URL.revokeObjectURL(old);
-        return URL.createObjectURL(pdf);
-      });
+      const [pdfjs, worker] = await Promise.all([
+        import('pdfjs-dist'),
+        import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+      ]);
+      pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+      const doc = await pdfjs.getDocument({ data: await pdf.arrayBuffer() }).promise;
+      const pages = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const viewport = page.getViewport({ scale: 2 }); // ponytail: fixed 2x scale, crisp for A4 in a side pane
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), canvas, viewport }).promise;
+        pages.push(canvas.toDataURL());
+      }
+      setPreviewPages(pages);
       setStatus(null);
     } catch (err) {
       setStatus({ error: err.message });
@@ -290,8 +304,8 @@ export default function App() {
             )}
           </form>
         )}
-        <button onClick={() => { setFinished(false); setFeedbackState(null); setFeedback(''); }}>
-          ← Back to the editor
+        <button onClick={() => { setFinished(false); setFeedbackState(null); setFeedback(''); setTemplateId(null); setStarted(false); }}>
+          ← Back to start
         </button>
       </main>
       </>
@@ -301,7 +315,7 @@ export default function App() {
   return (
     <>
     {wash}
-    <main className={'screen' + (previewUrl ? ' with-preview' : '')}>
+    <main className={'screen' + (previewPages ? ' with-preview' : '')}>
       <header className="topbar">
         <h1>Sofu — {TEMPLATES[templateId].name}</h1>
         <div>
@@ -311,7 +325,7 @@ export default function App() {
             </button>
           )}
           <button disabled={status === 'compiling'} onClick={refreshPreview}>
-            {previewUrl ? '↻ Refresh preview' : 'Preview'}
+            {previewPages ? '↻ Refresh preview' : 'Preview'}
           </button>
           <button onClick={() => setTemplateId(null)}>Change format</button>
         </div>
@@ -493,13 +507,17 @@ export default function App() {
         </div>
       )}
     </main>
-    {previewUrl && (
+    {previewPages && (
       <aside className="preview-pane">
         <div className="preview-bar">
           <span>Preview</span>
-          <button onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}>× Close</button>
+          <button onClick={() => setPreviewPages(null)}>× Close</button>
         </div>
-        <iframe src={previewUrl} title="CV preview" />
+        <div className="preview-pages">
+          {previewPages.map((src, i) => (
+            <img key={i} src={src} alt={`CV page ${i + 1}`} />
+          ))}
+        </div>
       </aside>
     )}
     </>
