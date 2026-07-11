@@ -105,10 +105,67 @@ export default function App() {
       const { tex, files, engine } = buildTex(data, templateId);
       const pdf = await compileToPdf(tex, files, engine);
       downloadBlob(pdf, `CV_${data.name.replace(/\s+/g, '_') || 'resume'}.pdf`);
-      setStatus('done');
-      setTimeout(() => setStatus((s) => (s === 'done' ? null : s)), 2500);
+      setStatus(null);
+      setFinished(true);
     } catch (err) {
       setStatus({ error: err.message });
+    }
+  }
+
+  // ponytail: free MyMemory API, no key — ~5000 chars/day per IP; swap in DeepL if users hit the cap
+  async function toGerman(text) {
+    if (!text?.trim()) return text;
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|de`
+    );
+    const json = await res.json();
+    if (!res.ok || !json.responseData?.translatedText) throw new Error('Translation service unavailable');
+    return json.responseData.translatedText;
+  }
+
+  async function translateAll() {
+    setStatus('translating');
+    try {
+      const all = (xs) => Promise.all(xs);
+      const d = { ...data };
+      d.education = await all(data.education.map(async (e) => ({
+        ...e, degree: await toGerman(e.degree), bullets: await all(e.bullets.map(toGerman)),
+      })));
+      d.experience = await all(data.experience.map(async (e) => ({
+        ...e, position: await toGerman(e.position), bullets: await all(e.bullets.map(toGerman)),
+      })));
+      d.projects = await all(data.projects.map(async (e) => ({
+        ...e, title: await toGerman(e.title), context: await toGerman(e.context), bullets: await all(e.bullets.map(toGerman)),
+      })));
+      d.skills = await all(data.skills.map(async (s) => ({
+        ...s, category: await toGerman(s.category), items: await toGerman(s.items),
+      })));
+      d.languages = await all(data.languages.map(toGerman));
+      d.hobbies = await toGerman(data.hobbies);
+      setData(d);
+      setStatus(null);
+    } catch (err) {
+      setStatus({ error: 'Translation failed: ' + err.message });
+    }
+  }
+
+  const [finished, setFinished] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [feedbackState, setFeedbackState] = useState(null); // null | 'sent' | 'error'
+  // ponytail: Netlify Forms — POST to / only works on the deployed site, not `vite dev`
+  async function sendFeedback(e) {
+    e.preventDefault();
+    if (!feedback.trim()) return;
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ 'form-name': 'feedback', message: feedback }),
+      });
+      if (!res.ok) throw new Error();
+      setFeedbackState('sent');
+    } catch {
+      setFeedbackState('error');
     }
   }
 
@@ -200,9 +257,42 @@ export default function App() {
               <path d="M52 148 q10 -10 18 0 t18 -2" stroke="#666" strokeWidth="1.5" fill="none" />
             </svg>
             <strong>{TEMPLATES.deutsch.name}</strong>
-            <small>Sidebar-Lebenslauf mit Foto &amp; Unterschrift</small>
+            <small>Sidebar Lebenslauf with photo &amp; signature</small>
           </button>
         </div>
+      </main>
+      </>
+    );
+  }
+
+  if (finished) {
+    return (
+      <>
+      {wash}
+      <main className="welcome screen">
+        <h1 className="welcome-title">Thank you!</h1>
+        <p className="welcome-sub">
+          Thanks for using Sofu — your CV is on its way to your downloads folder.
+          Good luck with the applications!
+        </p>
+        {feedbackState === 'sent' ? (
+          <p className="welcome-sub">✓ Feedback received — thank you!</p>
+        ) : (
+          <form className="feedback" onSubmit={sendFeedback}>
+            <textarea
+              placeholder="Spotted an error or have a suggestion? Tell us here…"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+            />
+            <button className="primary" type="submit">Send feedback</button>
+            {feedbackState === 'error' && (
+              <p className="error">Couldn’t send feedback — please try again later.</p>
+            )}
+          </form>
+        )}
+        <button onClick={() => { setFinished(false); setFeedbackState(null); setFeedback(''); }}>
+          ← Back to the editor
+        </button>
       </main>
       </>
     );
@@ -215,6 +305,11 @@ export default function App() {
       <header className="topbar">
         <h1>Sofu — {TEMPLATES[templateId].name}</h1>
         <div>
+          {templateId === 'deutsch' && (
+            <button disabled={status === 'translating'} onClick={translateAll}>
+              Translate to German
+            </button>
+          )}
           <button disabled={status === 'compiling'} onClick={refreshPreview}>
             {previewUrl ? '↻ Refresh preview' : 'Preview'}
           </button>
@@ -231,30 +326,30 @@ export default function App() {
           <input placeholder="Email" value={data.email} onChange={set('email')} />
           <input placeholder="linkedin.com/in/username" value={data.linkedin} onChange={set('linkedin')} />
           {templateId === 'deutsch' && (
-            <input placeholder="Geburtsdatum (TT.MM.JJJJ)" value={data.birthdate} onChange={set('birthdate')} />
+            <input placeholder="Date of birth (DD.MM.YYYY)" value={data.birthdate} onChange={set('birthdate')} />
           )}
         </div>
         {templateId === 'deutsch' && (
           <>
             <div className="photo-row">
               <label>
-                Foto: <input type="file" accept="image/*" onChange={loadImage('photo', 480, 600, 'image/jpeg')} />
+                Photo: <input type="file" accept="image/*" onChange={loadImage('photo', 480, 600, 'image/jpeg')} />
               </label>
               {data.photo && (
                 <>
-                  <img className="photo-preview" src={data.photo} alt="Bewerbungsfoto" />
-                  <button onClick={() => setData({ ...data, photo: '' })}>Foto entfernen</button>
+                  <img className="photo-preview" src={data.photo} alt="Application photo" />
+                  <button onClick={() => setData({ ...data, photo: '' })}>Remove photo</button>
                 </>
               )}
             </div>
             <div className="photo-row">
               <label>
-                Unterschrift: <input type="file" accept="image/*" onChange={loadImage('signature', 600, 240, 'image/png')} />
+                Signature: <input type="file" accept="image/*" onChange={loadImage('signature', 600, 240, 'image/png')} />
               </label>
               {data.signature && (
                 <>
-                  <img className="signature-preview" src={data.signature} alt="Unterschrift" />
-                  <button onClick={() => setData({ ...data, signature: '' })}>Entfernen</button>
+                  <img className="signature-preview" src={data.signature} alt="Signature" />
+                  <button onClick={() => setData({ ...data, signature: '' })}>Remove</button>
                 </>
               )}
             </div>
@@ -272,7 +367,7 @@ export default function App() {
               <input placeholder="Degree and program" value={e.degree} onChange={(ev) => setEntry('education', i, 'degree', ev.target.value)} />
               <input placeholder="Mon. YYYY -- Mon. YYYY" value={e.dates} onChange={(ev) => setEntry('education', i, 'dates', ev.target.value)} />
               {templateId === 'deutsch' && (
-                <input placeholder="Note (z.B. 1,7)" value={e.grade} onChange={(ev) => setEntry('education', i, 'grade', ev.target.value)} />
+                <input placeholder="Grade (e.g. 1,7)" value={e.grade} onChange={(ev) => setEntry('education', i, 'grade', ev.target.value)} />
               )}
             </div>
             {templateId === 'deutsch' && (
@@ -280,7 +375,7 @@ export default function App() {
                 {e.bullets.map((b, bi) => (
                   <div className="bullet" key={bi}>
                     <input
-                      placeholder="Detail: Schwerpunkte, Abschlussarbeit …"
+                      placeholder="Detail: focus areas, thesis …"
                       value={b}
                       onChange={(ev) =>
                         setEntry('education', i, 'bullets', e.bullets.map((x, xj) => (xj === bi ? ev.target.value : x)))
@@ -358,11 +453,11 @@ export default function App() {
       {templateId === 'deutsch' && (
         <>
           <section>
-            <h2>Sprachkenntnisse</h2>
+            <h2>Languages</h2>
             {data.languages.map((l, i) => (
               <div className="bullet" key={i}>
                 <input
-                  placeholder="Sprache — Niveau (z.B. Deutsch — C1)"
+                  placeholder="Language — level (e.g. Deutsch — C1)"
                   value={l}
                   onChange={(ev) =>
                     setData({ ...data, languages: data.languages.map((x, j) => (j === i ? ev.target.value : x)) })
@@ -371,11 +466,11 @@ export default function App() {
                 <button onClick={() => setData({ ...data, languages: data.languages.filter((_, j) => j !== i) })}>×</button>
               </div>
             ))}
-            <button onClick={() => setData({ ...data, languages: [...data.languages, ''] })}>+ Sprache</button>
+            <button onClick={() => setData({ ...data, languages: [...data.languages, ''] })}>+ Language</button>
           </section>
 
           <section>
-            <h2>Hobbys &amp; Interessen</h2>
+            <h2>Hobbies &amp; Interests</h2>
             <input placeholder="Hobby 1, Hobby 2, Hobby 3" value={data.hobbies} onChange={set('hobbies')} />
           </section>
         </>
@@ -388,14 +483,15 @@ export default function App() {
         {status?.error && <pre className="error">{status.error}</pre>}
       </footer>
 
-      {status === 'compiling' && (
+      {(status === 'compiling' || status === 'translating') && (
         <div className="overlay">
           <div className="spinner" />
-          <p className="overlay-text">Typesetting your CV with LaTeX…</p>
+          <p className="overlay-text">
+            {status === 'compiling' ? 'Typesetting your CV with LaTeX…' : 'Translating your CV to German…'}
+          </p>
           <p className="overlay-hint">this usually takes a few seconds</p>
         </div>
       )}
-      {status === 'done' && <div className="toast">✓ PDF downloaded</div>}
     </main>
     {previewUrl && (
       <aside className="preview-pane">

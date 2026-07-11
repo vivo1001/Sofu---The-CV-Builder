@@ -501,11 +501,12 @@ export const TEMPLATES = {
   },
   deutsch: {
     name: 'Deutsch (Lebenslauf)',
+    // UI-only labels (English); the PDF section titles stay German in deSection()
     labels: {
-      education: 'Ausbildung',
-      experience: 'Berufserfahrung',
-      projects: 'Projekte',
-      skills: 'Kenntnisse & Fähigkeiten',
+      education: 'Education',
+      experience: 'Work Experience',
+      projects: 'Projects',
+      skills: 'Skills & Abilities',
     },
     build: buildDeutsch,
   },
