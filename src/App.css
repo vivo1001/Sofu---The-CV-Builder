@@ -113,6 +113,13 @@ h2 {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
 .card small { color: var(--muted); }
+.card-preview {
+  width: 120px;
+  height: 168px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(30, 27, 58, 0.1);
+}
 
 /* ---------- form ---------- */
 .topbar {
@@ -187,6 +194,36 @@ button:active { transform: scale(0.97); }
 .photo-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 .photo-preview { width: 64px; height: 80px; object-fit: cover; border: 1px solid var(--border); border-radius: 6px; }
 .signature-preview { height: 40px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+
+/* ---------- pdf preview pane ---------- */
+.preview-pane {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(46vw, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 18px rgba(30, 27, 58, 0.1);
+  z-index: 5;
+  animation: fade 0.25s ease both;
+}
+.preview-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.preview-pane iframe { flex: 1; width: 100%; border: none; }
+main.with-preview { margin-left: auto; margin-right: calc(min(46vw, 640px) + 24px); }
+@media (max-width: 900px) {
+  .preview-pane { width: 100vw; }
+  main.with-preview { margin-right: auto; }
+}
 
 /* ---------- footer / actions ---------- */
 footer { margin-top: 28px; text-align: center; }

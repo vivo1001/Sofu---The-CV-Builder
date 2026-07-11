@@ -112,6 +112,24 @@ export default function App() {
     }
   }
 
+  // ponytail: manual refresh, not live — each compile is a multi-second remote
+  // texlive.net call; debounced auto-compile if a local LaTeX/WASM engine lands
+  const [previewUrl, setPreviewUrl] = useState(null);
+  async function refreshPreview() {
+    setStatus('compiling');
+    try {
+      const { tex, files, engine } = buildTex(data, templateId);
+      const pdf = await compileToPdf(tex, files, engine);
+      setPreviewUrl((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return URL.createObjectURL(pdf);
+      });
+      setStatus(null);
+    } catch (err) {
+      setStatus({ error: err.message });
+    }
+  }
+
   if (!started) {
     return (
       <>
@@ -142,11 +160,45 @@ export default function App() {
         <div className="cards">
           <button className="card" onClick={() => setTemplateId('english')}>
             <span className="card-icon">EN</span>
+            {/* ponytail: hand-drawn layout sketch, swap for real screenshots if templates change often */}
+            <svg className="card-preview" viewBox="0 0 120 168" aria-hidden="true">
+              <rect width="120" height="168" fill="#fff" />
+              <rect x="30" y="12" width="60" height="7" rx="2" fill="#444" />
+              <rect x="24" y="24" width="72" height="3" rx="1.5" fill="#aaa" />
+              {[36, 78, 120].map((y) => (
+                <g key={y}>
+                  <rect x="12" y={y} width="40" height="4" rx="2" fill="#4f46e5" />
+                  <rect x="12" y={y + 8} width="96" height="1.5" fill="#ddd" />
+                  <rect x="12" y={y + 14} width="96" height="3" rx="1.5" fill="#bbb" />
+                  <rect x="12" y={y + 20} width="88" height="3" rx="1.5" fill="#ccc" />
+                  <rect x="12" y={y + 26} width="92" height="3" rx="1.5" fill="#ccc" />
+                </g>
+              ))}
+            </svg>
             <strong>{TEMPLATES.english.name}</strong>
             <small>Classic single-column resume</small>
           </button>
           <button className="card" onClick={() => setTemplateId('deutsch')}>
             <span className="card-icon">DE</span>
+            <svg className="card-preview" viewBox="0 0 120 168" aria-hidden="true">
+              <rect width="120" height="168" fill="#fff" />
+              <rect width="42" height="168" fill="#e8e7f7" />
+              <circle cx="21" cy="26" r="13" fill="#7c3aed" />
+              {[52, 60, 68, 84, 92, 100, 116, 124].map((y) => (
+                <rect key={y} x="8" y={y} width="26" height="3" rx="1.5" fill="#9a94c9" />
+              ))}
+              <rect x="52" y="14" width="48" height="6" rx="2" fill="#444" />
+              {[34, 82].map((y) => (
+                <g key={y}>
+                  <rect x="52" y={y} width="34" height="4" rx="2" fill="#4f46e5" />
+                  <rect x="52" y={y + 10} width="56" height="3" rx="1.5" fill="#bbb" />
+                  <rect x="52" y={y + 16} width="50" height="3" rx="1.5" fill="#ccc" />
+                  <rect x="52" y={y + 22} width="54" height="3" rx="1.5" fill="#ccc" />
+                  <rect x="52" y={y + 28} width="46" height="3" rx="1.5" fill="#ccc" />
+                </g>
+              ))}
+              <path d="M52 148 q10 -10 18 0 t18 -2" stroke="#666" strokeWidth="1.5" fill="none" />
+            </svg>
             <strong>{TEMPLATES.deutsch.name}</strong>
             <small>Sidebar-Lebenslauf mit Foto &amp; Unterschrift</small>
           </button>
@@ -159,10 +211,15 @@ export default function App() {
   return (
     <>
     {wash}
-    <main className="screen">
+    <main className={'screen' + (previewUrl ? ' with-preview' : '')}>
       <header className="topbar">
         <h1>Sofu — {TEMPLATES[templateId].name}</h1>
-        <button onClick={() => setTemplateId(null)}>Change format</button>
+        <div>
+          <button disabled={status === 'compiling'} onClick={refreshPreview}>
+            {previewUrl ? '↻ Refresh preview' : 'Preview'}
+          </button>
+          <button onClick={() => setTemplateId(null)}>Change format</button>
+        </div>
       </header>
 
       <section>
@@ -340,6 +397,15 @@ export default function App() {
       )}
       {status === 'done' && <div className="toast">✓ PDF downloaded</div>}
     </main>
+    {previewUrl && (
+      <aside className="preview-pane">
+        <div className="preview-bar">
+          <span>Preview</span>
+          <button onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}>× Close</button>
+        </div>
+        <iframe src={previewUrl} title="CV preview" />
+      </aside>
+    )}
     </>
   );
 }
